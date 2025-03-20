@@ -31,14 +31,7 @@ from __init__ import __version__  # pylint: disable=no-name-in-module
 from platformdirs import user_config_dir, user_log_dir
 import requests  # type: ignore
 import keyring
-import chromedriver_autoinstaller
-from selenium import webdriver
-from selenium.webdriver.common.by import By
-from selenium.webdriver.common.keys import Keys
-from selenium.webdriver.chrome.service import Service
-from selenium.webdriver.support.ui import WebDriverWait
-from selenium.webdriver.support import expected_conditions as EC
-from webdriver_manager.chrome import ChromeDriverManager
+from playwright.sync_api import sync_playwright
 from bs4 import BeautifulSoup, Tag
 
 # pylint: enable=wrong-import-position
@@ -96,7 +89,7 @@ def get_voice_status(
     """Get status of voice lines from a Rath 2100-VOIP2cs (a.k.a Cisco 191 ATA).
 
     Args:
-        ata_ip: str IP address of VoIP adapter.
+        adapter_ip: str IP address of VoIP adapter.
         username: str Username for login.
         password: str Password for login.
 
@@ -106,95 +99,82 @@ def get_voice_status(
         LookupError: Error getting voice status.
 
     Returns:
-        dict[str, dict[str, str | None]]: _description_
+        dict[str, dict[str, str | None]]: Parsed voice status data.
     """
     try:
-        # Configure WebDriver
-        options = webdriver.ChromeOptions()
-        """WebDriver options."""
-        options.add_argument("--headless")  # Run in headless mode (no UI)
-        options.add_argument("--disable-gpu")
-        options.add_argument("--no-sandbox")
+        with sync_playwright() as p:
+            logger.info("Starting Playwright browser ...")
+            browser = p.chromium.launch(headless=True)
+            context = browser.new_context()
+            page = context.new_page()
 
-        logger.info("Auto-installing chromedriver ...")
-        chromedriver_autoinstaller.install()
+            logger.info(f"Opening http://{adapter_ip}/ ...")
+            page.goto(f"http://{adapter_ip}/", timeout=30000)
 
-        logger.info("Starting webdriver ...")
-        service = Service(ChromeDriverManager().install())
-        driver = webdriver.Chrome(service=service, options=options)
-        """WebDriver instance."""
-        driver.set_page_load_timeout(60)  # Set page load timeout to 60 seconds
+            logger.info('Wait for the "user" field to be present ...')
+            page.wait_for_selector('input[name="user"]')
 
-        logger.info(f"WebDriver version: {driver.capabilities['browserVersion']}")
-        logger.info(f"Opening http://{adapter_ip}/ ...")
-        driver.get(f"http://{adapter_ip}/")
+            # Find and fill username field
+            page.fill('input[name="user"]', username)
 
-        logger.info('Wait for the "user" field to be present ...')
-        WebDriverWait(driver, 10).until(EC.presence_of_element_located((By.NAME, "user")))
+            # Find and fill password field
+            page.fill('input[name="pwd"]', password)
 
-        # Find and fill username field
-        driver.find_element(By.NAME, "user").send_keys(username)
+            logger.info(f"Logging in as {username} ...")
+            page.press('input[name="pwd"]', "Enter")
 
-        # Find and fill password field
-        password_field = driver.find_element(By.NAME, "pwd")
-        password_field.send_keys(password)
+            logger.info("Waiting for login to finish ...")
+            page.wait_for_selector('#trt_quicksetup\\.asp', timeout=30000)
 
-        logger.info(f"Logging in as {username} ...")
-        password_field.send_keys(Keys.RETURN)
+            # Check if login successful
+            if page.url == f"http://{adapter_ip}/":
+                raise ValueError("Login failed.")
 
-        logger.info("Waiting for login to finish ...")
-        WebDriverWait(driver, 30).until(
-            EC.presence_of_element_located((By.ID, "trt_quicksetup.asp"))
-        )
+            logger.info(f"Navigating to status page http://{adapter_ip}/voice.asp ...")
+            page.goto(f"http://{adapter_ip}/voice.asp", timeout=30000)
 
-        # Check if login successful
-        if driver.current_url == f"http://{adapter_ip}/":
-            raise ValueError("Login failed.")
+            logger.info("Waiting for iframe to be present ...")
+            page.wait_for_selector("#iframe")
 
-        logger.info(f"Navigating to status page http://{adapter_ip}/voice.asp ...")
-        driver.get(f"http://{adapter_ip}/voice.asp")
+            logger.info("Switching to iframe ...")
+            frame = page.frame(name="iframe")
+            if not frame:
+                raise ValueError("Failed to switch to iframe.")
 
-        logger.info("Waiting for iframe to be present ...")
-        WebDriverWait(driver, 10).until(EC.presence_of_element_located((By.ID, "iframe")))
+            logger.info('Waiting for element with id "information" to be present ...')
+            frame.wait_for_selector("#Information")
 
-        logger.info("Switching to iframe ...")
-        iframe = driver.find_element(By.ID, "iframe")
-        driver.switch_to.frame(iframe)
+            # Find the element with id 'information'
+            information_element = frame.query_selector("#Information")
+            if not information_element:
+                raise ValueError("Failed to retrieve the information element.")
 
-        logger.info('Waiting for element with id "information" to be present ...')
-        WebDriverWait(driver, 10).until(EC.presence_of_element_located((By.ID, "Information")))
+            logger.info("Parsing HTML content ...")
+            outer_html = information_element.inner_html()
+            if outer_html is None:
+                raise ValueError("Failed to retrieve outerHTML from the information element.")
+            soup = BeautifulSoup(outer_html, "html.parser")
 
-        # Find the element with id 'information'
-        information_element = driver.find_element(By.ID, "Information")
+            # Loop over tr elements and extract key-value pairs
+            data: dict[str, dict[str, str | None]] = {}
+            for row in soup.find_all("tr"):
+                assert isinstance(row, Tag)
+                tds = row.find_all("td")
+                if len(tds) == 1:
+                    if key := tds[0].get_text(strip=True):
+                        data[key] = {}
+                else:
+                    for i, td in enumerate(tds):
+                        assert isinstance(td, Tag)
+                        if td.get("align") == "left":
+                            data[key][td.get_text(strip=True)] = (
+                                tds[i + 1].get_text(strip=True) if i + 1 < len(tds) else None
+                            )
 
-        logger.info("Parsing HTML content ...")
-        outer_html = information_element.get_attribute("outerHTML")
-        if outer_html is None:
-            raise ValueError("Failed to retrieve outerHTML from the information element.")
-        soup = BeautifulSoup(outer_html, "html.parser")
-
-        # Loop over tr elements and extract key-value pairs
-        data: dict[str, dict[str, str | None]] = {}
-        for row in soup.find_all("tr"):
-            assert isinstance(row, Tag)
-            tds = row.find_all("td")
-            if len(tds) == 1:
-                if key := tds[0].get_text(strip=True):
-                    data[key] = {}
-            else:
-                for i, td in enumerate(tds):
-                    assert isinstance(td, Tag)
-                    if td.get("align") == "left":
-                        data[key][td.get_text(strip=True)] = (
-                            tds[i + 1].get_text(strip=True) if i + 1 < len(tds) else None
-                        )
-
-        driver.quit()  # Close the browser
-        return data
+            browser.close()  # Close the browser
+            return data
 
     except Exception as e:
-        if driver:
-            driver.quit()  # Close the browser
         raise LookupError(f"Error getting voice status: {e}") from e
 
 
