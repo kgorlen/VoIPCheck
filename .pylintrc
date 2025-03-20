@@ -1,0 +1,2 @@
+[MESSAGES CONTROL]
+disable=logging-fstring-interpolation,invalid-name,pointless-string-statement,too-many-lines

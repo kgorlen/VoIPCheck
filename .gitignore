@@ -1,0 +1,9 @@
+.mypy_cache
+.venv
+__pycache__
+/dist
+/build
+*.egg-info
+.conda
+*.code-workspace
+voipcheck.toml
