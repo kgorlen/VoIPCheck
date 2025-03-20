@@ -1,8 +1,8 @@
 """voipcheck.py -- Check the status of a Rath 2100-VOIP2CS (a.k.a Cisco 191 ATA).
 
 References:
-    [Selenium with Python](https://selenium-python.readthedocs.io/)
-    [ChromeDriver](https://developer.chrome.com/docs/chromedriver/get-started)
+    [Playwright for Python](https://playwright.dev/python/docs/intro)
+    [Playwright Python API](https://playwright.dev/python/docs/api/class-playwright)
     [TOML: A config file format for humans](https://toml.io/en/)
     [keyring](https://pypi.org/project/keyring/)
     [Requests: HTTP for Humans](https://docs.python-requests.org/en/master/)

@@ -97,7 +97,7 @@ hook_state_ping_url = "https://hc-ping.com/<your-check-uuid>"
 
 [Install python 3.12 or later version](https://www.python.org/downloads/).
 
-Install [ChromeDriver](https://developer.chrome.com/docs/chromedriver/get-started)
+Install [Playwright](https://playwright.dev/python/docs/intro)
 
 Install [pipx](https://pipx.pypa.io/stable/):
 
@@ -131,10 +131,16 @@ For example:
 <code>pipx install <i>path</i>\voipcheck-0.1.5-.tar.gz</code>
 </pre>
 
+## INSTALL PLAYWRIGHT BROWSERS
+
+```
+pipx install playwright
+playwright install
+```
+
 # SEE ALSO
 
-* [Selenium with Python](https://selenium-python.readthedocs.io/)<br>
-* [ChromeDriver](https://developer.chrome.com/docs/chromedriver/get-started)<br>
+* [Playwright for Python](https://playwright.dev/python//)<br>
 * [pipx — Install and Run Python Applications in Isolated Environments](https://pipx.pypa.io/stable/)<br>
 * [Healthchecks.io Documentation](https://healthchecks.io/docs/)<br>
 * [TOML: A config file format for humans](https://toml.io/en/)<br>
