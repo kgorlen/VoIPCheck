@@ -38,12 +38,12 @@ conventional OS-dependent data directory,
 See [TOML: A config file format for humans](https://toml.io/en/) for the
 **.toml** file format specification.
 
-## adapter_ip
+## adapter_url
 
-Set the IP address of the VoIP adapter, e.g.:
+Set the URL of the VoIP adapter, e.g.:
 
 ```toml
-adapter_ip = "192.168.1.20"
+adapter_url = "http://voip.lan"
 ```
 
 ## service

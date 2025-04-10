@@ -84,12 +84,12 @@ def exit_with_status(status: int) -> NoReturn:
 
 
 def get_voice_status(
-    adapter_ip: str, username: str, password: str
+    adapter_url: str, username: str, password: str
 ) -> dict[str, dict[str, str | None]]:
     """Get status of voice lines from a Rath 2100-VOIP2cs (a.k.a Cisco 191 ATA).
 
     Args:
-        adapter_ip: str IP address of VoIP adapter.
+        adapter_url: str URL of VoIP adapter.
         username: str Username for login.
         password: str Password for login.
 
@@ -108,8 +108,8 @@ def get_voice_status(
             context = browser.new_context()
             page = context.new_page()
 
-            logger.info(f"Opening http://{adapter_ip}/ ...")
-            page.goto(f"http://{adapter_ip}/", timeout=30000)
+            logger.info(f"Opening {adapter_url} ...")
+            page.goto(adapter_url, timeout=30000)
 
             logger.info('Wait for the "user" field to be present ...')
             page.wait_for_selector('input[name="user"]')
@@ -127,11 +127,11 @@ def get_voice_status(
             page.wait_for_selector('#trt_quicksetup\\.asp', timeout=30000)
 
             # Check if login successful
-            if page.url == f"http://{adapter_ip}/":
+            if page.url == adapter_url:
                 raise ValueError("Login failed.")
 
-            logger.info(f"Navigating to status page http://{adapter_ip}/voice.asp ...")
-            page.goto(f"http://{adapter_ip}/voice.asp", timeout=30000)
+            logger.info(f"Navigating to status page {adapter_url}/voice.asp ...")
+            page.goto(f"{adapter_url}/voice.asp", timeout=30000)
 
             logger.info("Waiting for iframe to be present ...")
             page.wait_for_selector("#iframe")
@@ -212,7 +212,7 @@ def main() -> None:
 
     logger.info(f'Configuration loaded from "{config_file}".')
 
-    for key in ("adapter_ip", "service", "username", "registration_state_ping_url"):
+    for key in ("adapter_url", "service", "username", "registration_state_ping_url"):
         if key not in config_data:
             raise KeyError(f'"{key}" not found in {config_file}')
 
@@ -223,7 +223,7 @@ def main() -> None:
             if key not in config_data[line]:
                 raise KeyError(f'"{key}" not found in {config_file}')
 
-    adapter_ip: str = config_data["adapter_ip"]
+    adapter_url: str = config_data["adapter_url"]
     service: str = config_data["service"]
     username: str = config_data["username"]
 
@@ -232,7 +232,7 @@ def main() -> None:
     if password is None:
         raise LookupError(f"2100-VOIP2CS {username} password not found.")
 
-    data = get_voice_status(adapter_ip, username, password)
+    data = get_voice_status(adapter_url, username, password)
 
     for l in range(1, 3):
         line = f"Line {l} Status"
