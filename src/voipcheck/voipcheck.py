@@ -124,7 +124,7 @@ def get_voice_status(
             page.press('input[name="pwd"]', "Enter")
 
             logger.info("Waiting for login to finish ...")
-            page.wait_for_selector('#trt_quicksetup\\.asp', timeout=30000)
+            page.wait_for_selector("#trt_quicksetup\\.asp", timeout=30000)
 
             # Check if login successful
             if page.url == adapter_url:
@@ -271,7 +271,8 @@ def main() -> None:
     exit_with_status(0)
 
 
-if __name__ == "__main__":
+def cli() -> None:
+    """Command line interface for voipcheck.py."""
     try:
         main()
     except Exception as msg:  # pylint: disable=broad-exception-caught
@@ -282,3 +283,7 @@ if __name__ == "__main__":
         )
         logger.critical(f"{msg}; exiting.")
         exit_with_status(1)
+
+
+if __name__ == "__main__":
+    cli()
