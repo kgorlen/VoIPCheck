@@ -135,7 +135,7 @@ For example:
 
 ```
 pipx install playwright
-playwright install
+pipx run playwright install
 ```
 
 # SEE ALSO

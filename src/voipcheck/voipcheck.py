@@ -83,6 +83,28 @@ def exit_with_status(status: int) -> NoReturn:
     sys.exit(status)
 
 
+def ping(url: str, msg: str="") -> None:
+    """Ping healthchecks.io.
+
+    Args:
+        url (str): healthchecks.io URL
+        msg (str): message to log (default: "")
+
+    Raises:
+        requests.RequestException: If the request fails or returns a bad status code.
+    """
+    # url = "https://httpstat.us/504?sleep=60000" # For testing, simulates a 504 Gateway Timeout
+    logger.info(f'Sending ping to {url} data="{msg}" ...')
+    for timeout in (5, 10, 15):
+        try:
+            response = requests.post(url, timeout=timeout, data=msg)
+            response.raise_for_status()  # Raise an exception for bad status codes (4xx, 5xx)
+            return
+        except requests.exceptions.Timeout:
+            logger.info(
+                f"Ping to {url} timed out after {timeout}s, retrying ...")
+
+
 def get_voice_status(
     adapter_url: str, username: str, password: str
 ) -> dict[str, dict[str, str | None]]:
@@ -243,8 +265,7 @@ def main() -> None:
     for l in range(1, 3):
         if data[f"Line {l} Status"]["Hook State:"] == "On":
             logger.info(f"Pinging healthchecks.io Line {l} Hook State On ...")
-            response = requests.get(config_data[f"line{l}"]["hook_state_ping_url"], timeout=20)
-            response.raise_for_status()  # Raise an exception for bad status codes (4xx, 5xx)
+            ping(config_data[f"line{l}"]["hook_state_ping_url"])
             logger.info("Successful Hook State ping sent.")
 
     unregistered: list[str] = [
@@ -255,16 +276,12 @@ def main() -> None:
 
     if not unregistered:
         logger.info("Pinging healthchecks.io Registration State OK ...")
-        response = requests.get(config_data["registration_state_ping_url"], timeout=20)
-        response.raise_for_status()  # Raise an exception for bad status codes (4xx, 5xx)
+        ping(config_data["registration_state_ping_url"])
         logger.info("Successful Registration State ping sent.")
     else:
         msg = f'{", ".join(unregistered)} NOT REGISTERED.'
         logger.info(f'Sending fail ping: "{msg}" ...')
-        response = requests.post(
-            config_data["registration_state_ping_url"] + "/fail", timeout=20, data=msg
-        )
-        response.raise_for_status()  # Raise an exception for bad status codes (4xx, 5xx)
+        ping(config_data["registration_state_ping_url"] + "/fail", msg)
         logger.info("Fail ping sent.")
         exit_with_status(1)
 
