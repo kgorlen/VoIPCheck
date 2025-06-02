@@ -92,6 +92,8 @@ def ping(url: str, msg: str="") -> None:
 
     Raises:
         requests.RequestException: If the request fails or returns a bad status code.
+        requests.exceptions.Timeout: If the request times out after retries.
+
     """
     # url = "https://httpstat.us/504?sleep=60000" # For testing, simulates a 504 Gateway Timeout
     logger.info(f'Sending ping to {url} data="{msg}" ...')
@@ -103,6 +105,7 @@ def ping(url: str, msg: str="") -> None:
         except requests.exceptions.Timeout:
             logger.info(
                 f"Ping to {url} timed out after {timeout}s, retrying ...")
+    raise requests.exceptions.Timeout(f"Ping to {url} timed out after multiple attempts.")
 
 
 def get_voice_status(
