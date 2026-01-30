@@ -13,6 +13,8 @@ References:
 __author__ = "Keith Gorlen"
 
 import sys
+import os
+import subprocess
 from datetime import datetime
 from pathlib import Path
 import logging
@@ -29,7 +31,6 @@ sys.path.append(str(SCRIPT_DIR))
 # pylint: disable=wrong-import-position
 from __init__ import __version__  # pylint: disable=no-name-in-module
 from platformdirs import user_config_dir, user_log_dir
-import requests  # type: ignore
 import keyring
 from playwright.sync_api import sync_playwright
 from bs4 import BeautifulSoup, Tag
@@ -83,29 +84,59 @@ def exit_with_status(status: int) -> NoReturn:
     sys.exit(status)
 
 
-def ping(url: str, msg: str="") -> None:
-    """Ping healthchecks.io.
+def ping_healthchecks(url: str, data: str = "", timeout=10) -> None:
+    """Send ping to healthchecks.io: https://healthchecks.io/docs/.
+
+    Arguments:
+                url -- healthchecks.io URL with unique ping code
+                data -- optional data to include in the ping
+                timeout -- timeout for the ping request (default: 10 seconds)
+    Raises:
+                RuntimeError -- if the ping fails
+                OSError -- if curl is not found
+    """
+    cmd = [
+        "curl",
+        "-fsS",
+        "--max-time", str(timeout),
+        "--retry", "5",
+        "-o", "NUL" if os.name == "nt" else "/dev/null",
+    ]
+    if data:
+        cmd += ["--data-raw", data]
+    # cmd.append("http://this-hostname-should-not-exist.invalid")  # Test DNS failure
+    # cmd.append("https://10.255.255.1") # For testing, simulates a 504 Gateway Timeout
+    cmd.append(url)
+    logger.info(f"Pinging healthchecks.io with command: {' '.join(cmd)} ...")
+
+    try:
+        result = subprocess.run(cmd, capture_output=True, text=True, check=False)
+        err = result.stderr
+
+        if result.returncode != 0:
+            raise RuntimeError(f"{' '.join(cmd)} failed: {err.strip()}")
+
+    except OSError as e:
+        raise OSError(f"curl not found or error: {e}")  # pylint: disable=raise-missing-from
+
+
+def signal_failure(url: str, msg: str) -> NoReturn:
+    """Signal failure and exit.
 
     Args:
         url (str): healthchecks.io URL
-        msg (str): message to log (default: "")
-
-    Raises:
-        requests.RequestException: If the request fails or returns a bad status code.
-        requests.exceptions.Timeout: If the request times out after retries.
-
+        msg (str): message to log
     """
-    # url = "https://httpstat.us/504?sleep=60000" # For testing, simulates a 504 Gateway Timeout
-    logger.info(f'Sending ping to {url} data="{msg}" ...')
-    for timeout in (5, 10, 15):
-        try:
-            response = requests.post(url, timeout=timeout, data=msg)
-            response.raise_for_status()  # Raise an exception for bad status codes (4xx, 5xx)
-            return
-        except requests.exceptions.Timeout:
-            logger.info(
-                f"Ping to {url} timed out after {timeout}s, retrying ...")
-    raise requests.exceptions.Timeout(f"Ping to {url} timed out after multiple attempts.")
+    logger.info(f"Signaling failure to {url}, data='{msg}' ...")
+    try:
+        ping_healthchecks(url + "/fail", msg)
+    except (RuntimeError, OSError) as e:
+        logger.critical(f"Failed to ping {url}: {e}")
+    except Exception as e:  # pylint: disable=broad-exception-caught
+        logger.critical(f"Unexpected error pinging {url}: {type(e).__name__}: {e}")
+    print(f'{datetime.now().strftime(DATE_FMT)} - CRITICAL - {msg}; exiting.', file=sys.stderr)
+    logger.critical(f'{msg}; exiting.')
+    exit_with_status(1)
 
 
 def get_voice_status(
@@ -121,7 +152,7 @@ def get_voice_status(
     Raises:
         ValueError: Login failed.
         ValueError: Failed to retrieve outerHTML from the information element.
-        LookupError: Error getting voice status.
+        Exception: Error getting voice status.
 
     Returns:
         dict[str, dict[str, str | None]]: Parsed voice status data.
@@ -182,6 +213,7 @@ def get_voice_status(
 
             # Loop over tr elements and extract key-value pairs
             data: dict[str, dict[str, str | None]] = {}
+            """data["Line {l} Status"]"""
             for row in soup.find_all("tr"):
                 assert isinstance(row, Tag)
                 tds = row.find_all("td")
@@ -192,7 +224,8 @@ def get_voice_status(
                     for i, td in enumerate(tds):
                         assert isinstance(td, Tag)
                         if td.get("align") == "left":
-                            data[key][td.get_text(strip=True)] = (
+                            # Will raise NameError if "Line {l} Status" section header missing
+                            data[key][td.get_text(strip=True)] = (  # type: ignore[assignment]
                                 tds[i + 1].get_text(strip=True) if i + 1 < len(tds) else None
                             )
 
@@ -200,7 +233,8 @@ def get_voice_status(
             return data
 
     except Exception as e:
-        raise LookupError(f"Error getting voice status: {e}") from e
+        logger.error(f"Error getting voice status: {type(e).__name__}: {e}")
+        raise
 
 
 def main() -> None:
@@ -268,7 +302,7 @@ def main() -> None:
     for l in range(1, 3):
         if data[f"Line {l} Status"]["Hook State:"] == "On":
             logger.info(f"Pinging healthchecks.io Line {l} Hook State On ...")
-            ping(config_data[f"line{l}"]["hook_state_ping_url"])
+            ping_healthchecks(config_data[f"line{l}"]["hook_state_ping_url"])
             logger.info("Successful Hook State ping sent.")
 
     unregistered: list[str] = [
@@ -279,12 +313,12 @@ def main() -> None:
 
     if not unregistered:
         logger.info("Pinging healthchecks.io Registration State OK ...")
-        ping(config_data["registration_state_ping_url"])
+        ping_healthchecks(config_data["registration_state_ping_url"])
         logger.info("Successful Registration State ping sent.")
     else:
         msg = f'{", ".join(unregistered)} NOT REGISTERED.'
         logger.info(f'Sending fail ping: "{msg}" ...')
-        ping(config_data["registration_state_ping_url"] + "/fail", msg)
+        ping_healthchecks(config_data["registration_state_ping_url"] + "/fail", msg)
         logger.info("Fail ping sent.")
         exit_with_status(1)
 
