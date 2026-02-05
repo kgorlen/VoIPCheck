@@ -98,9 +98,12 @@ def ping_healthchecks(url: str, data: str = "", timeout=10) -> None:
     cmd = [
         "curl",
         "-fsS",
-        "--max-time", str(timeout),
-        "--retry", "5",
-        "-o", "NUL" if os.name == "nt" else "/dev/null",
+        "--max-time",
+        str(timeout),
+        "--retry",
+        "5",
+        "-o",
+        "NUL" if os.name == "nt" else "/dev/null",
     ]
     if data:
         cmd += ["--data-raw", data]
@@ -134,8 +137,8 @@ def signal_failure(url: str, msg: str) -> NoReturn:
         logger.critical(f"Failed to ping {url}: {e}")
     except Exception as e:  # pylint: disable=broad-exception-caught
         logger.critical(f"Unexpected error pinging {url}: {type(e).__name__}: {e}")
-    print(f'{datetime.now().strftime(DATE_FMT)} - CRITICAL - {msg}; exiting.', file=sys.stderr)
-    logger.critical(f'{msg}; exiting.')
+    print(f"{datetime.now().strftime(DATE_FMT)} - CRITICAL - {msg}; exiting.", file=sys.stderr)
+    logger.critical(f"{msg}; exiting.")
     exit_with_status(1)
 
 
@@ -271,7 +274,13 @@ def main() -> None:
 
     logger.info(f'Configuration loaded from "{config_file}".')
 
-    for key in ("adapter_url", "service", "username", "registration_state_ping_url"):
+    for key in (
+        "adapter_url",
+        "service",
+        "username",
+        "adapter_ping_url",
+        "registration_state_ping_url",
+    ):
         if key not in config_data:
             raise KeyError(f'"{key}" not found in {config_file}')
 
@@ -291,7 +300,10 @@ def main() -> None:
     if password is None:
         raise LookupError(f"2100-VOIP2CS {username} password not found.")
 
-    data = get_voice_status(adapter_url, username, password)
+    try:
+        data = get_voice_status(adapter_url, username, password)
+    except Exception as e: # pylint: disable=broad-exception-caught
+        signal_failure(config_data["adapter_ping_url"], str(e))
 
     for l in range(1, 3):
         line = f"Line {l} Status"

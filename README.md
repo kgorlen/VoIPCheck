@@ -62,6 +62,14 @@ Set the VoIP adapter login user name, e.g.:
 username = "admin"
 ```
 
+## adapter_ping_url
+
+Set the `healthchecks.io` URL to ping if communication with the VoIP adapter fails.
+
+```toml
+adapter_ping_url = "https://hc-ping.com/<your-check-uuid>"
+```
+
 ## registration_state_ping_url
 
 Set the `healthchecks.io` URL to ping when both Line 1 and Line 2
