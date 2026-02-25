@@ -232,6 +232,11 @@ def get_voice_status(
                                 tds[i + 1].get_text(strip=True) if i + 1 < len(tds) else None
                             )
 
+            logger.info("Logging out ...")
+            page.get_by_role("link", name="Log Out").click()
+            page.wait_for_selector('input[name="user"]')
+
+            logger.info("Logout OK, closing browser ...")
             browser.close()  # Close the browser
             return data
 
