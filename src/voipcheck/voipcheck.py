@@ -61,7 +61,7 @@ voipcheck_log: Path = (
     Path(user_log_dir("VoIPCheck", appauthor=False, ensure_exists=True)) / "voipcheck.log"
 )
 """VoIPCheck log file."""
-rotating_handler = RotatingFileHandler(voipcheck_log, maxBytes=5 * 1024 * 1024, backupCount=3)
+rotating_handler = RotatingFileHandler(voipcheck_log, maxBytes=10_000_000, backupCount=9)
 """Rotating log file handler."""
 rotating_handler.setLevel(logging.INFO)
 rotating_handler.setFormatter(
