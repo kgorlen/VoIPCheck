@@ -7,4 +7,5 @@ __pycache__
 .conda
 *.code-workspace
 desktop.ini
+commit-msg.txt
 voipcheck.toml

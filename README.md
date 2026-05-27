@@ -12,11 +12,11 @@ no-inline-html MD033
 
 **voipcheck** - Check Cisco ATA 191 VoIP adapter status.
 
-# SYNOPSIS
+## SYNOPSIS
 
 ```voipcheck```
 
-# DESCRIPTION
+## DESCRIPTION
 
 The **voipcheck** CLI tool checks the status of a Rath 2100-VOIP2CS (a.k.a Cisco
 191 ATA) VoIP adapter and sends pings to `healthchecks.io`.
@@ -25,11 +25,11 @@ The **voipcheck** CLI tool checks the status of a Rath 2100-VOIP2CS (a.k.a Cisco
 OS-dependent log directory, `C:\Users\`*`Username`*`\AppData\Local\VoIPCheck\Logs`
 on Windows.
 
-# OPTIONS
+## OPTIONS
 
 None.
 
-# **voipcheck** SETTINGS
+## **voipcheck** SETTINGS
 
 Settings for **voipcheck** are configured in the `voipcheck.toml` file in the
 conventional OS-dependent data directory,
@@ -38,7 +38,7 @@ conventional OS-dependent data directory,
 See [TOML: A config file format for humans](https://toml.io/en/) for the
 **.toml** file format specification.
 
-## adapter_url
+### adapter_url
 
 Set the URL of the VoIP adapter, e.g.:
 
@@ -46,7 +46,7 @@ Set the URL of the VoIP adapter, e.g.:
 adapter_url = "http://voip.lan"
 ```
 
-## service
+### service
 
 Set the keyring service name, e.g.:
 
@@ -54,7 +54,7 @@ Set the keyring service name, e.g.:
 service = "2100-VOIP2CS"
 ```
 
-## username
+### username
 
 Set the VoIP adapter login user name, e.g.:
 
@@ -62,7 +62,7 @@ Set the VoIP adapter login user name, e.g.:
 username = "admin"
 ```
 
-## adapter_ping_url
+### adapter_ping_url
 
 Set the `healthchecks.io` URL to ping if communication with the VoIP adapter fails.
 
@@ -70,7 +70,7 @@ Set the `healthchecks.io` URL to ping if communication with the VoIP adapter fai
 adapter_ping_url = "https://hc-ping.com/<your-check-uuid>"
 ```
 
-## registration_state_ping_url
+### registration_state_ping_url
 
 Set the `healthchecks.io` URL to ping when both Line 1 and Line 2
 Registration State is *Registered*, e.g.
@@ -81,7 +81,21 @@ registration_state_ping_url = "https://hc-ping.com/<your-check-uuid>"
 
 A **fail** ping is sent if either line Registration State is *Failed*.
 
-## [line1]
+### free_memory_threshold_kB
+
+Logging in and accessing the Voice status page causes a memory leak under
+Firmware version 11-2-3MPP0001-028 Oct 24 2022. This exhausts memory after about
+10,000 cycles, causing the adapter to fail in various ways.  Adapter power must
+then be cycled manually to restart the adapter. To avoid this, the adapter is
+rebooted if free memory is less than `free_memory_threshold_kB` kB.
+
+```toml
+free_memory_threshold_kB = 10000
+```
+
+Set `free_memory_threshold_kB` = 0 to disable.
+
+### [line1]
 
 Set the URL to ping if the Line 1 Hook State is *On*, e.g.:
 
@@ -90,7 +104,7 @@ Set the URL to ping if the Line 1 Hook State is *On*, e.g.:
 hook_state_ping_url = "https://hc-ping.com/<your-check-uuid>"
 ```
 
-## [line2]
+### [line2]
 
 Set the URL to ping if the Line 2 Hook State is *On*, e.g.:
 
@@ -99,9 +113,9 @@ Set the URL to ping if the Line 2 Hook State is *On*, e.g.:
 hook_state_ping_url = "https://hc-ping.com/<your-check-uuid>"
 ```
 
-# INSTALLATION
+## INSTALLATION
 
-## PREREQUISITES
+### PREREQUISITES
 
 [Install python 3.12 or later version](https://www.python.org/downloads/).
 
@@ -113,7 +127,7 @@ Install [pipx](https://pipx.pypa.io/stable/):
 pip install pipx
 ```
 
-## INSTALL **voipcheck** FROM `.whl` package
+### INSTALL **voipcheck** FROM `.whl` package
 
 <pre>
 <code>pipx install <i>path</i>\voipcheck-<i>version</i>-py3-none-any.whl</code>
@@ -125,7 +139,7 @@ For example:
 <code>pipx install <i>path</i>\voipcheck-0.1.5-py3-none-any.whl</code>
 </pre>
 
-## INSTALL **voipcheck** FROM `.tar.gz` package
+### INSTALL **voipcheck** FROM `.tar.gz` package
 
 Alternatively, install **voipcheck** from a `.tar.gz` package file:
 
@@ -139,26 +153,26 @@ For example:
 <code>pipx install <i>path</i>\voipcheck-0.1.5-.tar.gz</code>
 </pre>
 
-## INSTALL PLAYWRIGHT BROWSERS
+### INSTALL PLAYWRIGHT BROWSERS
 
 ```
 pipx install playwright
 pipx run playwright install
 ```
 
-# SEE ALSO
+## SEE ALSO
 
 * [Playwright for Python](https://playwright.dev/python//)<br>
 * [pipx — Install and Run Python Applications in Isolated Environments](https://pipx.pypa.io/stable/)<br>
 * [Healthchecks.io Documentation](https://healthchecks.io/docs/)<br>
 * [TOML: A config file format for humans](https://toml.io/en/)<br>
 
-# AUTHOR
+## AUTHOR
 
 Keith Gorlen<br>
 <kgorlen@gmail.com>
 
-# COPYRIGHT
+## COPYRIGHT
 
 Copyright 2025 Keith Gorlen
 
