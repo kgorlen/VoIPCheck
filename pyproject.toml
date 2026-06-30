@@ -4,3 +4,6 @@ requires = ["setuptools", "wheel"]
 [tool.black]
 line-length = 100
 # skip-string-normalization = true
+[tool.ruff]
+line-length = 100
+format.quote-style = "preserve"

@@ -27,7 +27,9 @@ SCRIPT_DIR: Path = Path(__file__).absolute().parent
 sys.path.append(str(SCRIPT_DIR))
 """Enable imports from script directory."""
 
+# ruff: disable[E402]  # Disables module-import-not-at-top-of-file warnings
 # pylint: disable=wrong-import-position
+
 from __init__ import __version__  # pylint: disable=no-name-in-module
 from platformdirs import user_config_dir, user_log_dir
 import keyring
@@ -41,6 +43,7 @@ from playwright.sync_api import (
 )
 from bs4 import BeautifulSoup, Tag
 
+# ruff: enable[E402]  # Enables module-import-not-at-top-of-file warnings
 # pylint: enable=wrong-import-position
 
 
@@ -326,8 +329,10 @@ class VoIPAdapter:
             dict[str, int]: Dictionary with 'MemFree:' and 'MemTotal' values.
         """
         try:
-            logger.info(f"Navigating to Memory Information page "
-                        f"{self.adapter_url}/Memory_Information.asp ...")
+            logger.info(
+                f"Navigating to Memory Information page "
+                f"{self.adapter_url}/Memory_Information.asp ..."
+            )
             self.page.goto(f"{self.adapter_url}/Memory_Information.asp", timeout=30000)
 
             logger.info("Waiting for Memory Information to load ...")
@@ -428,8 +433,7 @@ def load_config() -> dict[str, Any]:
         with config_file.open("rb") as f:
             config_data = tomllib.load(f)
     except Exception as e:
-        raise ValueError(f"Error reading configuration file {
-                            config_file}: {e}") from e
+        raise ValueError(f"Error reading configuration file {config_file}: {e}") from e
 
     logger.info(f'Configuration loaded from "{config_file}".')
 
@@ -469,22 +473,22 @@ def check_voice_status(
     Raises:
         RuntimeError: If pinging healthchecks.io fails.
     """
-    for l in range(1, 3):
-        line = f"Line {l} Status"
+    for ln in range(1, 3):
+        line = f"Line {ln} Status"
         logger.info(f"{line}")
         for attr in ("Hook State:", "Registration State:"):
             logger.info(f"\t{attr} {voice_data[line][attr]}")
 
-    for l in range(1, 3):
-        if voice_data[f"Line {l} Status"]["Hook State:"] == "On":
-            logger.info(f"Pinging healthchecks.io Line {l} Hook State On ...")
-            ping_healthchecks(config_data[f"line{l}"]["hook_state_ping_url"])
+    for ln in range(1, 3):
+        if voice_data[f"Line {ln} Status"]["Hook State:"] == "On":
+            logger.info(f"Pinging healthchecks.io Line {ln} Hook State On ...")
+            ping_healthchecks(config_data[f"line{ln}"]["hook_state_ping_url"])
             logger.info("Successful Hook State ping sent.")
 
     unregistered: list[str] = [
-        f"Line {l}"
-        for l in range(1, 3)
-        if voice_data[f"Line {l} Status"]["Registration State:"] != "Registered"
+        f"Line {ln}"
+        for ln in range(1, 3)
+        if voice_data[f"Line {ln} Status"]["Registration State:"] != "Registered"
     ]
 
     if unregistered:
@@ -558,9 +562,7 @@ def main() -> None:
             )
 
             if mem_info["MemFree"] < reboot_threshold:
-                logger.warning(
-                    f"Free memory is < {reboot_threshold} kB; rebooting adapter ..."
-                )
+                logger.warning(f"Free memory is < {reboot_threshold} kB; rebooting adapter ...")
                 adapter.reboot()
 
     except Exception as e:  # pylint: disable=broad-exception-caught
