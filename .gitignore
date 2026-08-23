@@ -1,8 +1,8 @@
 .mypy_cache
 .venv
 __pycache__
-/dist
 /build
+/AppData
 *.egg-info
 .conda
 *.code-workspace
