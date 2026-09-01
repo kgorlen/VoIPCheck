@@ -1,0 +1,5 @@
+__version__ = '2.0.4'
+
+Exclude dist/.
+
+README.md: Update Installation instructions.

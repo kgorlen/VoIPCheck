@@ -127,31 +127,11 @@ Install [pipx](https://pipx.pypa.io/stable/):
 pip install pipx
 ```
 
-### INSTALL **voipcheck** FROM `.whl` package
+### INSTALL **voipcheck**
 
-<pre>
-<code>pipx install <i>path</i>\voipcheck-<i>version</i>-py3-none-any.whl</code>
-</pre>
-
-For example:
-
-<pre>
-<code>pipx install <i>path</i>\voipcheck-0.1.5-py3-none-any.whl</code>
-</pre>
-
-### INSTALL **voipcheck** FROM `.tar.gz` package
-
-Alternatively, install **voipcheck** from a `.tar.gz` package file:
-
-<pre>
-<code>pipx install <i>path</i>\voipcheck-<i>version</i>.tar.gz</code>
-</pre>
-
-For example:
-
-<pre>
-<code>pipx install <i>path</i>\voipcheck-0.1.5-.tar.gz</code>
-</pre>
+```
+pipx install git+https://github.com/kgorlen/VoIPCheck.git
+```
 
 ### INSTALL PLAYWRIGHT BROWSERS
 
@@ -165,6 +145,7 @@ pipx run playwright install
 * [Playwright for Python](https://playwright.dev/python//)<br>
 * [pipx — Install and Run Python Applications in Isolated Environments](https://pipx.pypa.io/stable/)<br>
 * [Healthchecks.io Documentation](https://healthchecks.io/docs/)<br>
+* [VoIPCheck Repository](https://github.com/kgorlen/VoIPCheck)
 * [TOML: A config file format for humans](https://toml.io/en/)<br>
 
 ## AUTHOR
