@@ -119,6 +119,8 @@ hook_state_ping_url = "https://hc-ping.com/<your-check-uuid>"
 
 [Install python 3.12 or later version](https://www.python.org/downloads/).
 
+[Install git](https://git-scm.com/install/)
+
 Install [Playwright](https://playwright.dev/python/docs/intro)
 
 Install [pipx](https://pipx.pypa.io/stable/):
